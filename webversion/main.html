@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Main</title>
+    <link rel="icon" href="./img/favicon.png" type="image/x-icon">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        h2.main {
+            margin-top: 130px;
+        }
+        #loading {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+        }
+        .toast.red-toast {
+            background-color: #dc3545;
+            color: white;
+        }
+        footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background-color: #f8f9fa; /* 버튼들과 같은 색상으로 변경 */
+            padding: 0; /* 푸터 높이를 조절하기 위해 padding을 제거 */
+            height: 60px; /* 푸터의 고정 높이를 설정 */
+            display: flex; /* Flexbox 사용 */
+            align-items: center; /* 수직 중앙 정렬 */
+            box-shadow: 0 -1px 5px rgba(0,0,0,0.1);
+        }
+        .footer-btn {
+            background-color: #f8f9fa; /* 푸터와 동일한 색상 */
+            border: 1px solid #ced4da; /* 버튼 테두리 색상 */
+            flex: 1; /* 버튼들이 동일한 너비를 가지도록 하기 */
+            display: flex; /* Flexbox를 사용하여 중앙 정렬 */
+            justify-content: center; /* 수평 중앙 정렬 */
+            align-items: center; /* 수직 중앙 정렬 */
+            height: 100%; /* 버튼 상태의 높이를 채우기 */
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
+
+    <div class="container d-flex flex-column justify-content-center align-items-center mb-5">
+        <h2 class="main mb-4"><strong>File Manager</strong></h2>
+        <div class="d-flex flex-column align-items-center w-100">
+            <a href="./file.html" class="btn btn-primary btn-lg mb-2 w-100">File</a>
+            <a href="./company.html" class="btn btn-danger btn-lg mb-2 w-100">Company</a>
+        </div>  
+    </div>
+
+    <footer>
+        <a id="sync" class="btn footer-btn border-0">Sync</a>
+        <a id="look" class="btn footer-btn border-0">Look</a>
+        <a id="remove" class="btn footer-btn border-0">Remove</a>
+        <a href="./help.html" class="btn footer-btn border-0">Help</a>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.0.10/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="./js/main.js"></script>
+</body>
+</html>

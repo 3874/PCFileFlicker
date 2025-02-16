@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>파일 업로드</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>파일 업로드 하기</h1>
+    <input type="file" id="fileInput">
+    <button id="uploadButton">업로드</button>
+    
+    <div id="message"></div>
+
+    <script>
+        $(document).ready(function() {
+            $('#uploadButton').click(function() {
+                const fileInput = $('#fileInput')[0];
+                const file = fileInput.files[0];
+
+                if (!file) {
+                    $('#message').text('파일을 선택해주세요.');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                $.ajax({
+                    url: 'http://54.241.204.91:5000/dbsync',
+                    type: 'POST',
+                    processData: false,
+                    contentType: false,
+                    data: formData,
+                    success: function(response) {
+                        $('#message').text('성공: ' + JSON.stringify(response));
+                    },
+                    error: function(xhr, status, error) {
+                        $('#message').text('오류: ' + error);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

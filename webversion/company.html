@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Manager</title>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+
+    <div class="container">
+        <div class="row align-items-center mb-4 mt-4">
+            <div class="col-auto">
+                <a href="javascript:history.back()" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i>  
+                </a>
+            </div>
+            <div class="col text-center">
+                <h4>Company List</h4>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="mt-4">
+            <table id="companyTable" class="display table table-striped table-bordered" style="width:100%">
+                <thead>
+                    <tr>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Data will be dynamically added here -->
+                </tbody>
+            </table>
+        </div>
+        <div class="my-4 text-center">
+            <button class="btn btn-danger" id="clearDatabase_btn">Remove DB</button>
+            <button class="btn btn-info" id="Upload_btn">Upload</button>
+        </div>
+    </div>
+
+    <div class="modal fade" id="compDetailModal" tabindex="-1" role="dialog" aria-labelledby="compDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalcompany">Company name</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <h6 hidden>ID:</h6>
+                    <p id="fileID" hidden></p>
+                    <h6>Summary:</h6>
+                    <p id="modalSummary" style="font-size: 12px"></p>
+                    <hr>
+                    <h6>Files</h6>
+                    <div id="relatedFiles"></div>
+                    <hr>
+                    <h6>Tags:</h6>
+                    <p id="modalTags" style="font-size: 12px"></p>
+                    <hr>
+                    <h6>Comment:</h6>
+                    <p id="modalComment"  style="font-size: 12px"></p>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let db;
+        let totalPages = 0; // totalPages 변수를 전역으로 선언
+        let pLength = 25;
+        let companyTable; // companyTable 변수를 전역으로 선언
+    
+        $(document).ready(function() {
+            companyTable = $('#companyTable').DataTable({
+                responsive: true,
+                lengthChange: false,
+                info: false,
+                scrollY: true,
+                paging: true,
+                order: [[0, 'asc']],
+                columns: [
+                    { data: 'doc_id', title: 'ID' },
+                    { data: 'company', title: 'Name', render: function(data) { return limitText(data, 30); } },
+                    { data: 'tags', title: 'Tags', render: function(data) { 
+                            if (Array.isArray(data)) {
+                                return limitText(data.join(', '), 15); 
+                            } else if (typeof data === 'string') {
+                                return limitText(data.split(',').map(tag => tag.trim()), 15);
+                            }
+                            return "..."; 
+                        } 
+                    },
+                    { data: 'summary', title: 'Summary', render: function(data) { return limitText(data, 50); } }
+                ],
+                pageLength: pLength,
+                initComplete: function() {
+                    const currentPage = this.api().page();
+                    $('#companyTable').css('font-size', '11px'); 
+                },
+            });
+    
+            const request = indexedDB.open("CompanyDB", 1);
+    
+            request.onupgradeneeded = function(event) {
+                db = event.target.result;
+                db.createObjectStore("companyObjectStore", { keyPath: "id" });
+            };
+    
+            request.onsuccess = function(event) {
+                db = event.target.result;
+                loadFiles();
+            };
+    
+            request.onerror = function(event) {
+                console.error("Database error: " + event.target.errorCode);
+            };
+    
+            $('#clearDatabase_btn').click(function() {
+                const confirmDelete = confirm("Are you sure you want to clear the entire database?");
+                if (confirmDelete) {
+                    const transaction = db.transaction(["companyObjectStore"], "readwrite");
+                    const objectStore = transaction.objectStore("companyObjectStore");
+                    
+                    const clearRequest = objectStore.clear();
+                    
+                    clearRequest.onsuccess = function() {
+                        companyTable.clear().draw();
+                        alert("Database cleared successfully!");
+                    };
+    
+                    clearRequest.onerror = function(event) {
+                        console.error("Error clearing database: ", event.target.error);
+                        alert("Error clearing database.");
+                    };
+                }
+            });
+    
+            function loadFiles() {
+                const transaction = db.transaction(["companyObjectStore"], "readonly");
+                const objectStore = transaction.objectStore("companyObjectStore");
+            
+                // 전체 데이터 수 가져오기
+                const countRequest = objectStore.count();
+            
+                countRequest.onsuccess = function(event) {
+                    const totalCount = event.target.result; // 전체 데이터 수
+                    const pageLength = companyTable.page.len(); // 페이지당 항목 수
+                    totalPages = Math.ceil(totalCount / pageLength); // 총 페이지 수
+            
+                    companyTable.clear(); 
+            
+                    const cursorRequest = objectStore.openCursor();
+                    let count = 0; 
+            
+                    cursorRequest.onsuccess = function(event) {
+                        const cursor = event.target.result;
+            
+                        if (cursor) {
+                            companyTable.row.add(cursor.value);
+                            count++;
+                            cursor.continue();
+                        } else {
+                            companyTable.draw();
+                        }
+                    };
+                };
+            
+                countRequest.onerror = function(event) {
+                    console.error("Error retrieving count: ", event.target.error);
+                };
+            }
+    
+            $('#companyTable tbody').on('click', 'tr', function () {
+                const data = companyTable.row(this).data();
+                $('#modalFileName').text(data.file_name);
+                $('#fileID').text(data.id);
+                $('#modalTags').text(data.tags);
+                $('#modalcompany').text(data.company);
+                $('#modalSummary').html(data.summary.replace(/\\\\n/g, '<br>'));
+                $('#modalComment').text(data.comments);
+                $('#modalFileLocation').attr('href', data.location).text(data.location);      
+                $('#compDetailModal').modal('show');
+            });
+    
+            $('#Upload_btn').click(function() {
+    
+            });
+    
+            $('#downloadFile_btn').click(async function() {
+                let last_filename = $('#modalFileLocation').text().split('\\\\\\\\').pop().split('/').pop();
+                await downloadFile(last_filename);
+            });
+        });
+    
+        function limitText(text, limit) {
+            if (text == null) return "...";
+            if (Array.isArray(text)) {
+                text = text.join(', ').trim();
+            }
+            if (typeof text !== "string") return "...";
+            return text.length > limit ? text.substring(0, limit) + '...' : text; 
+        }
+    
+        async function downloadFile(fileName) {
+            console.log("Downloading file:", fileName);
+        }
+    </script>
+
+    <script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
