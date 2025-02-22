@@ -1,4 +1,4 @@
-# PCFileFlicker
+# PCFileFlicker (FileFlicker Standalone)
 
 # FileFlicker - File Management and QR Code Generation Tool
 
