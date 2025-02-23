@@ -174,7 +174,6 @@ def upload_file():
         return jsonify({"error": "No file part"}), 400
 
     file = request.files['file']
-    print(file.filename)
 
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
